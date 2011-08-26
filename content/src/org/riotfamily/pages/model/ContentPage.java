@@ -45,37 +45,38 @@ import org.riotfamily.core.security.AccessController;
 import org.riotfamily.pages.config.PageType;
 import org.springframework.util.StringUtils;
 
-
 /**
  * @author Felix Gnass [fgnass at neteye dot de]
  * @author Jan-Frederic Linde [jfl at neteye dot de]
  * @since 6.5
  */
 @Entity
-@Table(name="riot_pages", uniqueConstraints = {@UniqueConstraint(columnNames={"site_id", "path"})})
-@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="pages")
+@Table(name = "riot_pages", uniqueConstraints = { @UniqueConstraint(columnNames = {
+		"site_id", "path" }) })
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "pages")
 @TagCacheItems
 public class ContentPage extends ContentEntity implements Page, Lifecycle {
 
 	public static final String TITLE_PROPERTY = "title";
-	
+
 	private Long id;
-	
+
 	private String pageTypeName;
-	
+
 	private ContentPage parent;
-	
+
 	private List<ContentPage> children;
-	
+
 	private Site site;
 
 	private String pathComponent;
 
 	private String path;
-	
+
 	private Date creationDate;
 
-	@Id @GeneratedValue(strategy=GenerationType.AUTO)
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	public Long getId() {
 		return id;
 	}
@@ -83,7 +84,7 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 	public void setId(Long id) {
 		this.id = id;
 	}
-	
+
 	public ContentPage() {
 	}
 
@@ -91,15 +92,15 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		this.pathComponent = pathComponent;
 		this.site = site;
 	}
-		
+
 	public String getPathComponent() {
 		return pathComponent;
 	}
-	
+
 	public void setPathComponent(String pathComponent) {
 		this.pathComponent = pathComponent;
 	}
-	
+
 	@Transient
 	public PageType getPageType() {
 		if (site != null && pageTypeName != null) {
@@ -111,49 +112,49 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 	public void setPageType(PageType pageType) {
 		this.pageTypeName = pageType.getName();
 	}
-	
-	@Column(name="pageType")
+
+	@Column(name = "pageType")
 	protected String getPageTypeName() {
 		return pageTypeName;
 	}
-	
+
 	protected void setPageTypeName(String pageTypeName) {
 		this.pageTypeName = pageTypeName;
 	}
-	
-	@ManyToOne(cascade=CascadeType.MERGE)
+
+	@ManyToOne(cascade = CascadeType.MERGE)
 	public Site getSite() {
 		return this.site;
 	}
-	
+
 	public void setSite(Site site) {
 		this.site = site;
 	}
-	
-	@ManyToOne(fetch=FetchType.LAZY, cascade=CascadeType.MERGE)
-	@JoinColumn(name="parent_id", updatable=false, insertable=false)
+
+	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
+	@JoinColumn(name = "parent_id", updatable = false, insertable = false)
 	public ContentPage getParent() {
 		return parent;
 	}
-	
+
 	public void setParent(ContentPage parent) {
 		this.parent = parent;
 	}
-	
-	@OneToMany(cascade=CascadeType.ALL)
-	@JoinColumn(name="parent_id")
-	@IndexColumn(name="pos")
-	@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="pages")
+
+	@OneToMany(cascade = CascadeType.ALL)
+	@JoinColumn(name = "parent_id")
+	@IndexColumn(name = "pos")
+	@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "pages")
 	public List<ContentPage> getChildren() {
 		return children;
 	}
-		
+
 	public void setChildren(List<ContentPage> children) {
 		this.children = children;
 	}
-			
+
 	// ----------------------------------------------------------------------
-	
+
 	@Transient
 	public Locale getLocale() {
 		return site.getLocale();
@@ -169,7 +170,8 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 
 	@Transient
 	public String getTitle() {
-		Object title = getContentContainer().getContent(true).get(TITLE_PROPERTY);
+		Object title = getContentContainer().getContent(true).get(
+				TITLE_PROPERTY);
 		if (title != null) {
 			return title.toString();
 		}
@@ -178,13 +180,13 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		}
 		return FormatUtils.xmlToTitleCase(pathComponent);
 	}
-	
+
 	@Transient
 	public boolean isRequestable() {
 		return (isPublished() && site.isEnabled())
-			|| AccessController.isAuthenticatedUser();
+				|| AccessController.isAuthenticatedUser();
 	}
-		
+
 	@Transient
 	public List<ContentPage> getSiblings() {
 		if (parent == null) {
@@ -192,24 +194,23 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		}
 		return parent.getChildren();
 	}
-		
+
 	@Override
 	public String toString() {
-		return String.format("ContentPage[path=%s,id=%s,site=%s]", 
-				getPath(), getId(), site.getName());
+		return String.format("ContentPage[path=%s,id=%s,site=%s]", getPath(),
+				getId(), site.getName());
 	}
-	
+
 	// ----------------------------------------------------------------------
-	// 
+	//
 	// ----------------------------------------------------------------------
-	
+
 	public void addPage(ContentPage child) {
 		/*
-		if (!PageValidationUtils.isValidChild(this, child)) {
-			throw new DuplicatePathComponentException(
-					"Page '{0}' did not validate", child.toString());
-		}
-		*/
+		 * if (!PageValidationUtils.isValidChild(this, child)) { throw new
+		 * DuplicatePathComponentException( "Page '{0}' did not validate",
+		 * child.toString()); }
+		 */
 		child.setParent(this);
 		child.setSite(getSite());
 		if (children == null) {
@@ -217,18 +218,18 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		}
 		children.add(child);
 	}
-	
+
 	public void removePage(ContentPage child) {
 		children.remove(child);
 		if (this.equals(child.getParent())) {
 			child.setParent(null);
 		}
 	}
-		
+
 	// ----------------------------------------------------------------------
 	// Schema methods
 	// ----------------------------------------------------------------------
-	
+
 	@Transient
 	public boolean isSystemPage() {
 		return site.getSchema().isSystemPage(this);
@@ -247,7 +248,7 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 	// ----------------------------------------------------------------------
 	// Materialized path methods
 	// ----------------------------------------------------------------------
-	
+
 	public String getPath() {
 		if (path == null) {
 			materializePath();
@@ -258,7 +259,7 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 	public void setPath(String path) {
 		this.path = path;
 	}
-	
+
 	private void updatePath() {
 		String oldPath = this.path;
 		if (materializePath()) {
@@ -266,7 +267,7 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 			updateChildPaths();
 		}
 	}
-	
+
 	private void updateChildPaths() {
 		if (children != null) {
 			for (ContentPage child : children) {
@@ -274,7 +275,7 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 			}
 		}
 	}
-	
+
 	private boolean materializePath() {
 		String path = buildPath();
 		if (!path.equals(this.path)) {
@@ -283,7 +284,7 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		}
 		return false;
 	}
-	
+
 	private String buildPath() {
 		if (parent != null) {
 			String s = parent.getPath();
@@ -294,29 +295,29 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		}
 		return "/";
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Implementation of the Lifecycle interface
 	// ----------------------------------------------------------------------
-	
+
 	public void onSave() {
 		setCreationDate(new Date());
 		PageAlias.create(this, null);
 		updateChildPaths();
 	}
-	
+
 	public void onUpdate(Object oldState) {
 		updatePath();
 	}
-	
+
 	public void onDelete() {
 		PageAlias.resetByPage(this);
 	}
-	
+
 	// ----------------------------------------------------------------------
 	// Persistence methods
 	// ----------------------------------------------------------------------
-	
+
 	public static ContentPage load(Long id) {
 		return load(ContentPage.class, id);
 	}
@@ -327,28 +328,38 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 			session.refresh(this);
 		}
 	}
-	
+
 	public static ContentPage loadBySiteAndPath(Site site, String path) {
-		return query(ContentPage.class, 
-				"from {} where site = ? and path = ?", site, path)
-				.cache().load();
+		return query(ContentPage.class, "from {} where site = ? and path = ?",
+				site, path).cache().load();
 	}
-	
+
 	public static ContentPage loadByTypeAndSite(String pageType, Site site) {
-		return query(ContentPage.class, 
+		return query(ContentPage.class,
 				"from {} where pageType = ? and site = ?", pageType, site)
 				.cache().load();
 	}
+
+//	public static List<ContentPage> findByTypesAndSite(
+//			Collection<String> types, Site site) {
+//		if (types == null || types.isEmpty()) {
+//			return Collections.emptyList();
+//		}
+//		return query(ContentPage.class,
+//				"from {} where pageType in (:types) and site = :site")
+//				.setParameterList("types", types).setParameter("site", site)
+//				.cache().find();
+//	}
 
 	public static List<ContentPage> findByTypesAndSite(Collection<String> types, Site site) {
 		if (types == null || types.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return query(ContentPage.class,
-				"from {} where pageType in (:types) and site = :site")
-				.setParameterList("types", types)
-				.setParameter("site", site)
-				.cache().find();
+		
+		return sqlQuery(ContentPage.class,
+			"select * from riot_pages where pageType in (:types) and site_id = :site order by pos")
+			.setParameterList("types", types)
+			.setParameter("site", site.getId())
+			.cache().find();
 	}
-
 }
