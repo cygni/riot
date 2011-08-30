@@ -151,7 +151,18 @@ public abstract class ActiveRecord extends ConfigurableBean {
 		}
 		return new TypedQuery<T>(query, type);
 	}
-		
+	
+	protected static<T> TypedQuery<T> sqlQuery(Class<T> type, String sql, Object... params) {
+        Query query = getSession().createSQLQuery(sql).addEntity(type);
+        if (params != null) {
+                int index = 0;
+                for (Object param : params) {
+                        query.setParameter(index++, param);
+                }
+        }
+        return new TypedQuery<T>(query, type);
+	}
+	
 	/**
 	 * Convenience method to perform some code for every single result obtained
 	 * by the given query. It's save to call this method on a result set of
