@@ -43,7 +43,7 @@ dependsOnChildren()
 
 allprojects {
 	group = 'org.riotfamily'
-	version = '9.1.0.cygni.7'
+	version = '9.1.0.cygni.8'
 	repositories {
 		mavenRepo urls: 'http://repository.riotfamily.org/cache'
 		mavenRepo urls: 'http://repository.riotfamily.org/external'
