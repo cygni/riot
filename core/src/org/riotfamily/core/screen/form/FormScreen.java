@@ -14,6 +14,7 @@ package org.riotfamily.core.screen.form;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -63,7 +64,7 @@ public class FormScreen extends AjaxFormController
 
 	private String id;
 	
-	private String formId;
+	private String[] formIds;
 
 	private String icon;
 	
@@ -86,15 +87,48 @@ public class FormScreen extends AjaxFormController
 		this.viewName = viewName;
 	}
 
-	public String getFormId() {
-		if (formId == null) {
+	public String getFormId(HttpServletRequest request, ScreenContext context) {
+		if (formIds == null) {
 			return getId();
 		}
-		return formId;
+		else if (formIds.length == 1) {
+			return formIds[0];
+		}
+		else if (request.getParameter("formId") != null) {
+			String formId = request.getParameter("formId");
+			if (formId.contains(formId)) {
+				return formId;
+			}
+		}
+		else if (context.getObject() != null) {
+			for (String formId : formIds) {
+				Class<?> beanClass = formRepository.getBeanClass(formId);
+				if (beanClass.equals(context.getObject().getClass())) {
+					return formId;
+				}
+			}
+		}
+		return null;
 	}
 
-	public void setFormId(String formId) {
-		this.formId = formId;
+	public void setFormIds(String[] formIds) {
+		this.formIds = formIds;
+	}
+	
+	
+	public String[] getFormIds() {
+		return formIds;
+	}
+	
+	public boolean contains(String formId) {
+		if (formIds == null) {
+			return formId.equals(getId());
+		} 
+		return Arrays.asList(formIds).contains(formId);
+	}
+	
+	public boolean isFormChooser() {
+		return formIds != null && formIds.length > 1;
 	}
 	
 	public void setIcon(String icon) {
@@ -132,9 +166,10 @@ public class FormScreen extends AjaxFormController
 		
 	@Override
 	protected Form createForm(HttpServletRequest request) {
-		Form form = formRepository.createForm(getFormId());
-		form.addButton("save");
 		ScreenContext context = ScreenContext.Binding.get(request);
+		
+		Form form = formRepository.createForm(getFormId(request, context));
+		form.addButton("save");
 		form.setAttribute("screenContext", context);
 		return form;
 	}
@@ -226,34 +261,24 @@ public class FormScreen extends AjaxFormController
 		}
 		transactionManager.commit(status);
 	}
-
-	private boolean hasChildScreens() {
-		return getChildScreens() != null && !getChildScreens().isEmpty();
-	}
 	
 	protected ModelAndView afterSaveOrUpdate(
 			Form form, HttpServletRequest request,
 			ScreenContext context, boolean save) {
 		
-		ModelAndView mv;
-		String focus = request.getParameter("focus");
 		
 		// Recreate context to make sure it includes the objectId (in case of newly created objects)
-		context = context.createParentContext().createItemContext(form.getBackingObject());
-		
-		if (focus != null || (save && hasChildScreens())) {
-			mv = reloadForm(form, context, focus);
+		if (form.isNew()) {
+			context = context.createParentContext().createItemContext(form.getBackingObject());
 		}
-		else {
-			mv = showParentList(context);
-		}
-		
-		mv.addObject("notification", new FormNotification(form)
+
+		String focus = request.getParameter("focus");
+
+		return reloadForm(form, context, focus)
+				.addObject("notification", new FormNotification(form)
 				.setIcon("save")
 				.setMessageKey("label.form.saved")
 				.setDefaultMessage("Your changes have been saved."));
-		
-		return mv;
 	}
 
 	protected ModelAndView showParentList(ScreenContext context) {
@@ -295,7 +320,7 @@ public class FormScreen extends AjaxFormController
 	
 	public String getTitle(ScreenContext context) {
 		Locale locale = RequestContextUtils.getLocale(context.getRequest());
-		if (parentScreen instanceof GroupScreen) {
+		if (parentScreen instanceof GroupScreen || parentScreen instanceof ItemScreen) {
 			String code = "screen." + getId();
 			String defaultTitle = FormatUtils.xmlToTitleCase(getId());
 			return getMessageSource().getMessage(code, null, defaultTitle, locale);

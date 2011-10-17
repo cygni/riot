@@ -19,8 +19,10 @@ import org.apache.commons.httpclient.HttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.riotfamily.common.web.support.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 /**
  * PageLoader implementation that uses the Jakarta Commons HttpClient.
@@ -43,14 +45,18 @@ public class CommonsHttpClientPageLoader implements PageLoader {
 		String url = href.getResolvedUri();
 		PageData pageData = new PageData(href);
 		log.info("Loading page: " + url);
-		GetMethod method = new GetMethod(url);
-		HttpMethodRetryHandler retryHandler = new DefaultHttpMethodRetryHandler();
-		HttpMethodParams params = new HttpMethodParams();
-		params.setParameter(HttpMethodParams.RETRY_HANDLER, retryHandler);
-		method.setParams(params);
-		method.setFollowRedirects(false);
-
+		GetMethod method = null;
 		try {
+			method = new GetMethod(url);
+			HttpMethodRetryHandler retryHandler = new DefaultHttpMethodRetryHandler();
+			HttpMethodParams params = new HttpMethodParams();
+			params.setParameter(HttpMethodParams.RETRY_HANDLER, retryHandler);
+			method.setParams(params);
+			method.setFollowRedirects(false);
+			if (StringUtils.hasText(href.getReferrerUrl())) {
+				method.addRequestHeader(ServletUtils.REFERER_HEADER, href.getReferrerUrl());
+			}
+			prepareMethod(method);
 			int statusCode = client.executeMethod(method);
 			pageData.setStatusCode(statusCode);
 			if (statusCode == HttpStatus.SC_OK) {
@@ -81,12 +87,17 @@ public class CommonsHttpClientPageLoader implements PageLoader {
 		}
 		finally {
 			try {
-				method.releaseConnection();
+				if (method != null) {
+					method.releaseConnection();
+				}
 			}
 			catch (Exception e) {
 			}
 		}
 		return pageData;
+	}
+	
+	protected void prepareMethod(GetMethod method) {
 	}
 
 	protected boolean accept(GetMethod method) {

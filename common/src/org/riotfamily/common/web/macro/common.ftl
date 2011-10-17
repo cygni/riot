@@ -61,6 +61,17 @@
 </#function>
 
 <#---
+  - Adds the sessionId to the given URI if necessary.
+  - <h4>Example:</h4>
+  - <pre>${encode('/foo.html')}
+  - ==> /context/foo.html;jsessionid=...
+  - </pre> 
+  -->
+<#function encode href>
+	<#return commonMacroHelper.encodeUrl(href?trim) />
+</#function>
+
+<#---
   - Adds the contextPath and sessionId to all links found in the given HTML if necessary.
   - <h4>Example:</h4>
   - <pre>${encodeLinks('Hello &lt;a href="/world.html"&gt;World&lt;/a&gt;')} 
@@ -424,34 +435,34 @@
   - Renders a pager.
   - @see <a href="http://www.riotfamily.org/api/latest/org/riotfamily/website/generic/view/Pager.html">Pager</a>
   -->
-<#macro pager pager prev="&lt;&lt;" next="&gt;&gt;" gap="...">
-	<#if pager.pages gt 1>
+<#macro pager pager prev="&lt;&lt;" next="&gt;&gt;" gap="&hellip;">
+	<#if pager?has_content && pager.pages gt 1>
 		<#if pager.prevPage?exists>
-			<a class="prev-page" href="${pager.prevPage.link}">${prev}</a>
+			<a class="prev-page" href="${pager.prevPage.link?html}">${prev}</a>
 		</#if>
 		
 		<#if pager.firstPage?exists>
-			<a class="page" href="${pager.firstPage.link}">1</a>
+			<a class="page" href="${pager.firstPage.link?html}">1</a>
 			<#if pager.gapToFirstPage><span class="gap">${gap}</span></#if>
 		</#if>
 		
 		<#list pager.prevPages as page>
-			<a class="page" href="${page.link}">${page.number}</a>
+			<a class="page" href="${page.link?html}">${page.number}</a>
 		</#list>
 		
 		<span class="current-page">${pager.currentPage}</span>
 		
 		<#list pager.nextPages as page>
-			<a class="page" href="${page.link}">${page.number}</a>
+			<a class="page" href="${page.link?html}">${page.number}</a>
 		</#list>
 		
 		<#if pager.lastPage?exists>
 			<#if pager.gapToLastPage><span class="gap">${gap}</span></#if>
-			<a class="page" href="${pager.lastPage.link}">${pager.lastPage.number}</a>
+			<a class="page" href="${pager.lastPage.link?html}">${pager.lastPage.number}</a>
 		</#if>
 		
 		<#if pager.nextPage?exists>
-			<a class="next-page" href="${pager.nextPage.link}">${next}</a>
+			<a class="next-page" href="${pager.nextPage.link?html}">${next}</a>
 		</#if>
 	</#if>
 </#macro>

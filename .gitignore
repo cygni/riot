@@ -1,7 +1,12 @@
 build
 /bin
 .DS_Store
-.classpath
-.classpath.old
-.project
 .gradle
+/bin
+/target
+/.classpath
+/.classpath.old
+/.project
+/.pydevproject
+*.pyc
+gradle-app.setting

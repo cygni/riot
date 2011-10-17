@@ -71,6 +71,11 @@ public class InplaceMacroHelper {
 		return EditModeUtils.isLiveMode(request);
 	}
 	
+	public boolean isEditable(ContentMap contentMap) {
+		return EditModeUtils.isEditable("edit", 
+				contentMap.getContent().getContainer().getOwner(), request);
+	}
+	
 	public List<String> getToolbarScripts() {
 		return this.toolbarScripts;
 	}
@@ -102,7 +107,9 @@ public class InplaceMacroHelper {
 	public String renderComponent(Component component) throws Exception {
 		StringWriter sw = new StringWriter();
 		if (component != null) {
+			request.setAttribute("readOnlyComponent", true);
 			componentRenderer.render(component, request, new CapturingResponseWrapper(response, sw));
+			request.removeAttribute("readOnlyComponent");
 		}
 		return sw.toString();
 	}

@@ -18,7 +18,10 @@ var RiotList = Class.create({
 		}
 		
 		Event.observe(window, 'resize', this.resizeColumns.bind(this));
-		Event.observe(document, 'click', this.clearSelection.bind(this));
+		document.observe('click', function() {
+			this.clearSelection();
+			this.updateCommandStates();
+		}.bind(this));
 
 		if (commandTarget && $(commandTarget)) {
 			this.commandTarget = new Element('div');
@@ -223,7 +226,6 @@ var RiotList = Class.create({
 			if (tr.hasClassName('highlight')) {
 				tr.addClassName('highlight-selected');	
 			}
-			this.updateCommandStates();
 		}
 	},
 	
@@ -234,16 +236,14 @@ var RiotList = Class.create({
 			});
 			tr.removeClassName('selected');
 			tr.removeClassName('highlight-selected');
-			this.updateCommandStates();
 		}
 	},
 	
 	clearSelection: function() {
 		this.selection = [];
 		this.tbody.select('tr.selected').invoke('removeClassName', 'selected');
-		this.updateCommandStates();
 	},
-	
+		
 	updateCommandStates: function() {
 		if (this.commandButtons) {
 			ListService.getEnabledCommands(this.key, this.selection, 
@@ -316,7 +316,7 @@ var RiotList = Class.create({
 		},
 		
 		notification: function(list, result) {
-			riot.notification.show(result);;
+			riot.notification.show(result);
 		},
 		
 		reload: function(list, result) {
@@ -458,6 +458,7 @@ var ListRow = {
 				this.list.clearSelection();
 			}
 			this.list.toggleSelection(this);
+			this.list.updateCommandStates();
 			ev.stop();
 		},
 		
@@ -485,7 +486,8 @@ var ListRow = {
 					this.list.selection = [this.item];
 				}
 				this.list.updateCommandStates();
-				this.list.commandButtons[0].onclick();
+				var b = this.list.commandButtons[0];
+				b.handler(b.command.id); 
 			}
 		},
 		
@@ -573,6 +575,7 @@ var ListRow = {
 			if (this.expanded) {
 				this.setExpanded(false);
 				this.childRows.each(this.list.unselectRow.bind(this.list));
+				this.list.updateCommandStates();
 				this.removeChildren();
 			}
 		}
@@ -626,10 +629,17 @@ dwr.engine.setTextHtmlHandler(function() {
 
 dwr.engine.setErrorHandler(function(err, ex) {
 	if (ex.javaClassName) {
-		if (ex.javaClassName == 'org.riotfamily.core.security.PermissionDeniedException'
+		if (ex.javaClassName == 'org.riotfamily.core.security.policy.PermissionDeniedException'
 				&& ex.permissionRequestUrl) {
-		
-			location.href = top.contextPath + ex.permissionRequestUrl;
+			
+			new riot.window.Dialog({
+				url: riot.contextPath + ex.permissionRequestUrl,
+				minHeight : 255,
+				closeButton: true,
+				autoSize: true,
+				onClose: list.setIdle.bind(list)
+			});
+			
 		}
 		else {
 			list.setIdle();
@@ -652,11 +662,3 @@ dwr.engine.setWarningHandler(function(err, ex) {
 		console.log(err);
 	}
 });
-
-dwr.engine.setPreHook(function() {
-	if (top.setLoading) top.setLoading(true);
-});
-
-dwr.engine.setPostHook(function() {
-   if (top.setLoading) top.setLoading(false);
-}); 

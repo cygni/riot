@@ -6,20 +6,21 @@
 	<@riot.scripts srcs=[
 		"prototype/prototype.js",
 		"scriptaculous/effects.js",
-		"riot-js/util.js", 
-		"riot-js/resources.js", 
-		"riot-js/window/dialog.js",
-		"riot-js/notification/notification.js"] 
+		"riot/util.js", 
+		"riot/resources.js", 
+		"riot/window/dialog.js",
+		"riot/notification/notification.js"] 
 	/>
 	<@riot.stylesheets hrefs=[
-		"riot-js/window/dialog.css",
-		"riot-js/notification/notification.css",
+		"riot/window/dialog.css",
+		"riot/notification/notification.css",
 		"style/common.css"
 		] + (customStyleSheets![]) + (template.vars.stylesheets![])
 	/>
 	
 	<script language="JavaScript" type="text/javascript">
 		riot.Resources.setBasePath('${c.url(runtime.resourcePath)}');
+		riot.contextPath = '${request.contextPath}';
 	</script>
 	
 </head>
@@ -46,10 +47,20 @@
 	</div>
 	<div id="footer">
 		<div id="footer-content">
-			<a href="${c.urlForHandler('logoutController')}" class="logout"><@c.message "logout">Logout</@c.message></a>
+			<a href="${c.urlForHandler('logoutController')}" class="logout"><@c.message "logout">Logout</@c.message></a> | <a href="${c.urlForHandler('changePasswordController')}" id="changePassword"><@c.message "changePassword">Change Password</@c.message></a>
 		</div>
 	</div>
 	<script>
+		$('changePassword').observe('click', function (ev) {
+			ev.stop();
+			new riot.window.Dialog({
+				title: '<@c.message "changePassword">Change Password</@c.message>', 
+				url: '${c.resolve(riot.resource("/changePassword"))}',
+				minHeight : 255,
+				closeButton: true,
+				autoSize: true
+			});
+		})
 		new PeriodicalExecuter(function() {
 			new Ajax.Request('${c.resolve(riot.resource("/ping"))}');
 		}, 180);

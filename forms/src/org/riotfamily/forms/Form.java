@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.riotfamily.common.util.DocumentWriter;
+import org.riotfamily.common.util.FormatUtils;
 import org.riotfamily.common.util.Generics;
 import org.riotfamily.common.util.TagWriter;
 import org.riotfamily.forms.event.Button;
@@ -284,7 +285,7 @@ public class Form implements BeanEditor {
 	}
 
 	public String createId() {
-		return "e" + idCount++;
+		return FormatUtils.toCssClass(this.id) + "e" + idCount++;
 	}
 
 	/**
@@ -337,7 +338,7 @@ public class Form implements BeanEditor {
 		doc.start("script").body();
 		writer.write("if (!(window.riot && riot.Resources)) document.write('" 
 				+ "<script src=\"" + formContext.getContextPath()
-				+ formContext.getResourcePath() + "riot-js/resources.js"
+				+ formContext.getResourcePath() + "riot/resources.js"
 				+ "\"></scr'+'ipt>');\n");
 		doc.end();
 		doc.start("script").body();
@@ -497,11 +498,12 @@ public class Form implements BeanEditor {
 
 	public void setFormContext(FormContext formContext) {
 		this.formContext = formContext;
-		this.errors = new FormErrors(this);
-		this.editorBinder.registerPropertyEditors(
-				formContext.getPropertyEditorRegistrars());
 		
-		this.elements.setComponentPadding(formContext.getSizing().getLabelSize());
+		errors = new FormErrors(this);
+		editorBinder.registerPropertyEditors(formContext.getPropertyEditorRegistrars());
+		renderModel.put("messageResolver", formContext.getMessageResolver());
+		elements.setComponentPadding(formContext.getSizing().getLabelSize());
+		
 		Iterator<Element> it = getRegisteredElements().iterator();
 		while (it.hasNext()) {
 			Element element = it.next();

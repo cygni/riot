@@ -13,11 +13,13 @@
 package org.riotfamily.pages.model;
 
 import java.util.Collection;
+import java.util.Date;
 
 import org.riotfamily.components.model.ContentContainer;
 import org.riotfamily.components.model.ContentContainerOwner;
 import org.riotfamily.pages.config.PageType;
 import org.riotfamily.pages.config.VirtualPageType;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Page that is backed by a {@link ContentContainerOwner}.
@@ -54,7 +56,11 @@ public class VirtualPage implements Page {
 	}
 
 	public String getPath() {
-		return parent.getPath() + "/" + pathComponent;
+		String path = parent.getPath();
+		if (!path.endsWith("/")) {
+			path += "/";
+		}
+		return path + pathComponent;
 	}
 
 	public String getPathComponent() {
@@ -63,6 +69,10 @@ public class VirtualPage implements Page {
 
 	public String getTitle() {
 		return title;
+	}
+	
+	public String getUrl() {
+		return getPath() + getSite().getDefaultSuffix(this); 
 	}
 	
 	public Site getSite() {
@@ -79,6 +89,28 @@ public class VirtualPage implements Page {
 
 	public Collection<? extends Page> getChildren() {
 		return pageType.listChildren(this);
+	}
+	
+	public Date getLastPublished() {
+		return pageType.getResolver().getLastPublished(pageType, parent, object);
+	}
+	
+	@Override
+	public int hashCode() {
+		return pathComponent != null ? pathComponent.hashCode()  : 0;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) {
+			return true;
+		}
+		if (obj instanceof VirtualPage) {
+			VirtualPage other = (VirtualPage) obj;
+			return ObjectUtils.nullSafeEquals(pathComponent, other.pathComponent)
+				&& ObjectUtils.nullSafeEquals(parent, other.parent);
+		}
+		return false;
 	}
 
 }

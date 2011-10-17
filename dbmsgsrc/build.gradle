@@ -1,4 +1,5 @@
 dependencies {
 	compile project(':content'), lib('apache_poi')
+	compile lib('servlet_api')
 }
 

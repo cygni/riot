@@ -18,9 +18,7 @@
 
 <#macro register content>
 	<#if editMode && content.container??>
-		<object class="riot-container" style="display:none">
-			<param name="id" value="${content.container.id}" />
-		</object>
+		<a class="riot-container" style="display:none" rel="${content.container.id}" ></a>
 	</#if>
 </#macro>
 
@@ -42,18 +40,6 @@
 			var riotComponentFormParams = {};
 			${inplaceMacroHelper.initScript}
 			<#nested />
-		</script>
-	<#elseif inplaceMacroHelper.liveMode>
-		<script type="text/javascript" language="JavaScript">
-			if (parent && parent.liveLoaded) {
-				parent.liveLoaded();
-			}
-		</script>
-	<#elseif inplaceMacroHelper.previewMode>
-		<script type="text/javascript" language="JavaScript">
-			if (parent && parent.previewLoaded) {
-				parent.previewLoaded();
-			}
 		</script>
 	<#elseif bookmarklet>
 		<script type="text/javascript" language="JavaScript">
@@ -77,6 +63,11 @@
 	${inplaceMacroHelper.renderComponents(contentMap, key, min, max, initial, valid, x, y)!}
 </#macro>
 
+<#--- @internal -->
+<#function readOnlyComponent request=request>
+	<#return request.getAttribute("readOnlyComponent")!false /> 
+</#function>
+
 <#---
   - Macro that makes content editable via the Riot toolbar. The text is edited
   - in-line, which means that no further markup is supported, except for
@@ -98,7 +89,7 @@
   -->
 <#macro text key tag="" alwaysUseNested=false textTransform=true hyphenate=false attributes...>
 	<#local attributes = c.unwrapAttributes(attributes) />
-	<#if editMode>
+	<#if editMode && !readOnlyComponent()>
 		<#local attributes = attributes + {'riot:textTransform': textTransform?string} />
 	</#if>
 	<#if hyphenate>
@@ -128,7 +119,7 @@
   -->
 <#macro richtext key tag="" config="default" alwaysUseNested=false chunk=false hyphenate=false attributes...>
 	<#compress>
-		<#if editMode>
+		<#if editMode && !readOnlyComponent()>
 			<#local attributes = c.unwrapAttributes(attributes) + {"riot:config": config} />
 		</#if>
 		<#local editor = chunk?string("richtext-chunks", "richtext") />
@@ -161,7 +152,7 @@
 			<#local value = transform(value) />
 		</#if>
 		
-		<#if editMode>
+		<#if inplaceMacroHelper.isEditable(contentMap)  && !readOnlyComponent()>
 			<#if tag?has_content>
 				<#local element=tag />
 			<#else>
@@ -178,7 +169,7 @@
 </#macro>
 
 <#macro properties form tag="div" content=contentMap>
-	<#if editMode>
+	<#if inplaceMacroHelper.isEditable(content)>
 		<${tag} class="riot-content riot-form" riot:contentId="${content.compositeId}" riot:form="${form}"><#nested /></${tag}>
 	<#else>
 		<#nested />
@@ -264,6 +255,30 @@
 		<#return "" />
 	</#if>
 </#function>
+
+<#---
+  - Returns <code>"every-xxx-remainder-y"</code>, depending on the position of a component 
+  - within a list. For example <code>moduloClass(3,1)</code> returns 
+  - <code>"every-3rd-remainder-1"</code> for the first, fourth, seventh, ... component in the list and an empty
+  - string for all other components.
+  -->
+<#function moduloRemainderClass pos remainder>
+	<#if pos == 2>
+		<#local indicator = "nd" />
+	<#elseif pos == 3>
+		<#local indicator = "rd" />
+	<#else>
+		<#local indicator = "th" />
+	</#if>
+	<#if (position + 1) % pos == remainder>
+		<#return "every-" + pos + indicator + "-remainder-" + remainder />
+	<#elseif editMode>
+		<#return "not-every-" + pos + indicator + "-remainder-" + remainder />
+	<#else>
+		<#return "" />
+	</#if>
+</#function>
+
 
 <#--- 
   - Returns <code>"first"</code> when the component is the first component

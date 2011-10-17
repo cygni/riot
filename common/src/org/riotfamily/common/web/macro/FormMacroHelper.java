@@ -15,8 +15,10 @@ package org.riotfamily.common.web.macro;
 import java.util.Collection;
 import java.util.List;
 
+import org.riotfamily.common.beans.property.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.InvalidPropertyException;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
@@ -31,7 +33,7 @@ public class FormMacroHelper {
 	private String command;
 	
 	private RequestContext requestContext;
-
+	
 	public FormMacroHelper() {
 	}
 
@@ -141,7 +143,7 @@ public class FormMacroHelper {
 	public Object getValue(String field) {
 		BindStatus status = getFieldStatus(field);
 		if (status != null) {
-			return status.getValue();
+			return status.getActualValue();
 		}
 		return null;
 	}
@@ -160,19 +162,34 @@ public class FormMacroHelper {
 		return "";
 	}
 	
-	@SuppressWarnings("unchecked")
 	public boolean isSelected(String field, String option) {
+		return isSelected(field, option, null);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public boolean isSelected(String field, String option, String valueProperty) {
 		Object value = getValue(field);
 		if (value == null) {
 			return false;
 		}
 		if (value instanceof Collection) {
 			for (Object obj : (Collection) value) {
-				if (obj != null && obj.toString().equals(option)) {
+				if (obj != null && isEqualValue(option, obj, valueProperty)) {
 					return true;
 				}
 			}
 			return false;
+		}
+		return isEqualValue(option, value, valueProperty);
+	}
+	
+	private boolean isEqualValue(String option, Object value, String valueProperty) {
+		if (StringUtils.hasText(valueProperty)) {
+			try {
+				return PropertyUtils.getPropertyAsString(value, valueProperty).equals(option);				
+			} catch (InvalidPropertyException e) {
+				//ignore
+			}
 		}
 		return value.toString().equals(option);
 	}

@@ -119,7 +119,7 @@
 </#macro>
 
 <#function getDisplayValue field>
-	<#return formMacroHelper.getDisplayValue(field) />
+	<#return formMacroHelper.getDisplayValue(field)?html />
 </#function>
 
 <#---
@@ -165,7 +165,7 @@
 		<#local attributes = addErrorClass(attributes, field, errorClass) />
 	    <select id="${id}" name="${field}"${c.joinAttributes(attributes)}>
 	    	<#if addEmptyOption || emptyLabel?has_content>
-	    		<@option emptyValue?html emptyLabel?html />
+	    		<@option emptyValue emptyLabel />
 	    	</#if>
 	        <@listOptions field options valueProperty labelProperty messagePrefix ; value, label, selected>
 	        	<@option value label selected />
@@ -180,7 +180,7 @@
 <#macro checkbox field id=field errorClass="error" value="true" attributes...>
 	<#compress>
 		<#local attributes = addErrorClass(attributes, field, errorClass) />
-		<input type="checkbox" name="${field}" id="${id}" value="${value}"<@check formMacroHelper.getDisplayValue(field)! == value />${c.joinAttributes(attributes)} />
+		<input type="checkbox" name="${field}" id="${id}" value="${value?html}"<@check formMacroHelper.isSelected(field, value) />${c.joinAttributes(attributes)} />
 		<input type="hidden" name="_${field}" value="on"/>
 	</#compress>
 </#macro>
@@ -188,15 +188,16 @@
 <#---
   - Renders a list of checkboxes for the given options. See also #listOptions.
   -->
-<#macro checkboxes field options labelFirst=false valueProperty="" labelProperty="" messagePrefix="">
+<#macro checkboxes field options labelFirst=false valueProperty="" labelProperty="" messagePrefix="" errorClass="error" attributes...>
 	<#compress>
+		<#local attributes = addErrorClass(attributes, field, errorClass) />
 		<@listOptions field options valueProperty labelProperty messagePrefix ; value, label, checked, id>
 			<#if labelFirst>
-				<label for="${id}">${label}</label>
-				<input type="checkbox" name="${field}" id="${id}" value="${value}"<@check checked/> />		
+				<label for="${id}"${c.joinAttributes(attributes)}>${label}</label>
+				<input type="checkbox" name="${field}" id="${id}" value="${value?html}"<@check checked/>${c.joinAttributes(attributes)} />		
 			<#else>
-				<input type="checkbox" name="${field}" id="${id}" value="${value}"<@check checked/> />
-				<label for="${id}">${label}</label>
+				<input type="checkbox" name="${field}" id="${id}" value="${value?html}"<@check checked/>${c.joinAttributes(attributes)} />
+				<label for="${id}"${c.joinAttributes(attributes)}>${label}</label>
 			</#if>
 		</@listOptions>
 		<input type="hidden" name="_${field}" value="on" />
@@ -206,15 +207,16 @@
 <#---
   - Renders a list of radio buttons for the given options. See also #listOptions.
   -->
-<#macro radioButtons field options labelFirst=false valueProperty="" labelProperty="" messagePrefix="">
+<#macro radioButtons field options labelFirst=false valueProperty="" labelProperty="" messagePrefix="" errorClass="error" attributes...>
 	<#compress>
+		<#local attributes = addErrorClass(attributes, field, errorClass) />
 		<@listOptions field options valueProperty labelProperty messagePrefix ; value, label, checked, id>
 			<#if labelFirst>
-				<label for="${id}">${label}</label>
-				<input type="radio" name="${field}" id="${id}" value="${value}"<@check checked/> />
+				<label for="${id}"${c.joinAttributes(attributes)}>${label}</label>
+				<input type="radio" name="${field}" id="${id}" value="${value?html}"<@check checked/>${c.joinAttributes(attributes)} />
 			<#else>			
-				<input type="radio" name="${field}" id="${id}" value="${value}"<@check checked/> />
-				<label for="${id}">${label}</label>
+				<input type="radio" name="${field}" id="${id}" value="${value?html}"<@check checked/>${c.joinAttributes(attributes)} />
+				<label for="${id}"${c.joinAttributes(attributes)}>${label}</label>
 			</#if>		
 		</@listOptions>
 	</#compress>
@@ -244,8 +246,8 @@
 <#macro listOptions field options valueProperty="" labelProperty="" messagePrefix="">
 	<#if options?is_hash>
 		<#list options?keys as option>			
-			<#local selected = formMacroHelper.isSelected(field, option) />
-			<#nested option?html, options[option]?html, selected, field + '-' + option_index />
+			<#local selected = formMacroHelper.isSelected(field, option, valueProperty) />
+			<#nested option, options[option], selected, field + '-' + option_index />
 		</#list>
 	<#else>
 	    <#list options as option>
@@ -272,8 +274,8 @@
 	    		<#local optionLabel = c.getMessage(messagePrefix + optionLabel) />
 	    	</#if>
 	    	
-	    	<#local selected = formMacroHelper.isSelected(field, optionValue) />
-	    	<#nested optionValue?html, optionLabel?html, selected, field + '-' + option_index />
+	    	<#local selected = formMacroHelper.isSelected(field, optionValue, valueProperty) />
+	    	<#nested optionValue, optionLabel, selected, field + '-' + option_index />
 	    </#list>
 	</#if>
 </#macro>
@@ -288,7 +290,7 @@
   --> 
 <#macro option value label=value selected=false attributes...>
 	<#compress>
-		<option value="${value}"<#if selected> selected="selected"</#if>${c.joinAttributes(attributes)}>${label}</option>
+		<option value="${value?html}"<#if selected> selected="selected"</#if>${c.joinAttributes(attributes)}>${label}</option>
 	</#compress>
 </#macro>
 

@@ -27,7 +27,7 @@ import org.springframework.context.event.ApplicationEventMulticaster;
 /**
  * Class that crawls web pages.
  */
-public class Crawler implements InitializingBean, ApplicationListener, Runnable {
+public class Crawler implements InitializingBean, ApplicationListener<ApplicationEvent>, Runnable {
 
 	private Logger log = LoggerFactory.getLogger(Crawler.class);
 
@@ -159,9 +159,9 @@ public class Crawler implements InitializingBean, ApplicationListener, Runnable 
 			ContentChangedEvent ce = (ContentChangedEvent) event;
 			log.info("Content changed: " + ce.getUrl());
 			if (running) {
-				hrefs.addAbsolute(ce.getUrl());
+				hrefs.addAbsolute(ce.getUrl(), null);
 			}
-			PageData pageData = pageLoader.loadPage(new Href(null, ce.getUrl()));
+			PageData pageData = pageLoader.loadPage(new Href(null, ce.getUrl(), null));
 	        if (pageData.isOk()) {
 	        	try {
 		        	pageData.parse();
@@ -190,7 +190,7 @@ public class Crawler implements InitializingBean, ApplicationListener, Runnable 
 	protected void crawl() {
 		long startTime = System.currentTimeMillis();
 		hrefs.clear();
-		hrefs.addAbsolute(startPage);
+		hrefs.addAbsolute(startPage, null);
 		pageCount = 0;
 	    while (hrefs.hasNext()) {
 	    	Href href = hrefs.next();
@@ -200,7 +200,7 @@ public class Crawler implements InitializingBean, ApplicationListener, Runnable 
 		        	pageData.parse();
 	        		for (String link : linkExtractor.extractLinks(pageData)) { 
 	        			if (linkFilter.accept(pageData.getUrl(), link)) {
-	        				hrefs.add(pageData.getUrl(), link);
+	        				hrefs.add(pageData.getUrl(), link, href.getResolvedUri());
 	        			}
 		            }
 	        	}
@@ -211,7 +211,7 @@ public class Crawler implements InitializingBean, ApplicationListener, Runnable 
 	        else if (pageData.isRedirect()) {
 	        	log.debug("Redirect: " + pageData.getRedirectUrl());
 	        	if (linkFilter.accept(pageData.getUrl(), pageData.getRedirectUrl())) {
-	        		hrefs.add(pageData.getUrl(), pageData.getRedirectUrl());
+	        		hrefs.add(pageData.getUrl(), pageData.getRedirectUrl(), href.getResolvedUri());
 	        	}
 	        }
 

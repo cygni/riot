@@ -33,7 +33,7 @@ public class CheckboxGroup extends AbstractMultiSelectElement
 		implements DHTMLElement, ResourceElement {
 
 	protected static final FormResource RESOURCE = new ScriptResource(
-			"riot-js/checkbox.js", "RiotCheckboxGroup", Resources.PROTOTYPE);
+			"riot/checkbox.js", "RiotCheckboxGroup", Resources.PROTOTYPE);
 	
 	private String template;
 
@@ -69,7 +69,7 @@ public class CheckboxGroup extends AbstractMultiSelectElement
 	}
 		
 	public String getInitScript() {
-		return "new RiotCheckboxGroup('" + getId() + "');";
+		return "new RiotCheckboxGroup('" + getEventTriggerId() + "');";
 	}
 
 	@Override

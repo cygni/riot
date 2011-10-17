@@ -27,7 +27,7 @@ public class UnpublishCommand extends AbstractBatchCommand<ContentContainerOwner
 	
 	@Override
 	protected String getAction() {
-		return "publish";
+		return "unpublish";
 	}
 	
 	@Override
@@ -47,6 +47,7 @@ public class UnpublishCommand extends AbstractBatchCommand<ContentContainerOwner
 			ContentContainerOwner owner, int index, int selectionSize) {
 
 		owner.getContentContainer().unpublish();
-		return new RefreshListResult();
+		String objectId = context.getScreen().getDao().getObjectId(owner);
+		return new RefreshListResult(objectId).refreshAll();
 	}
 }

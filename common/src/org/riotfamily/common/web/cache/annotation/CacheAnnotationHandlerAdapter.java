@@ -47,6 +47,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.Ordered;
 import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
@@ -166,8 +167,9 @@ public class CacheAnnotationHandlerAdapter extends AnnotationMethodHandlerAdapte
 				RequestParam.class, RequestHeader.class, CookieValue.class));
 	
 		ignoredTypes.addAll(Arrays.asList(
-				Model.class, Map.class, Errors.class, BindingResult.class,
-				OutputStream.class, Writer.class));
+				Model.class, ModelMap.class, Map.class, Errors.class,
+				BindingResult.class, OutputStream.class, Writer.class,
+				HttpServletResponse.class));
 		
 		supportedTypes.addAll(Arrays.asList(
 				Locale.class, Principal.class));
@@ -214,7 +216,7 @@ public class CacheAnnotationHandlerAdapter extends AnnotationMethodHandlerAdapte
 	}
 	
 	protected boolean isSupportedArgument(Annotation[] annotations, Class<?> type) {
-		return containsSupportedAnnotation(annotations) || isSupportedType(type);
+		return !containsIgnoredAnnotation(annotations) && (containsSupportedAnnotation(annotations) || isSupportedType(type));
 	}
 	
 	private boolean containsSupportedAnnotation(Annotation[] annotations) {
@@ -226,14 +228,27 @@ public class CacheAnnotationHandlerAdapter extends AnnotationMethodHandlerAdapte
 		return false;
 	}
 	
+	private boolean containsIgnoredAnnotation(Annotation[] annotations) {
+		for (Annotation annotation : annotations) {
+			if (isIgnoredAnnotation(annotation)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	private boolean isSupportedAnnotation(Annotation annotation) {
 		if (supportedAnnotations.contains(annotation.annotationType())) {
 			return true;
 		}
-		else if (!ignoredAnnotations.contains(annotation.annotationType())) {
+		else if (!isIgnoredAnnotation(annotation)) {
 			throw new IllegalStateException("Unsupported annotation: " + annotation); 
 		}
 		return false;
+	}
+	
+	private boolean isIgnoredAnnotation(Annotation annotation) {
+		return ignoredAnnotations.contains(annotation.annotationType());
 	}
 	
 	private boolean isSupportedType(Class<?> type) {
