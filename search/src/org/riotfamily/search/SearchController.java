@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
@@ -31,7 +32,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.riotfamily.common.ui.Pager;
@@ -98,6 +98,10 @@ public class SearchController implements Controller, InitializingBean {
 		this.pagerPadding = pagerPadding;
 	}
 
+	public void setResultHighlighter(ResultHighlighter resultHighlighter) {
+		this.resultHighlighter = resultHighlighter;
+	}
+	
 	public void setViewName(String viewName) {
 		this.viewName = viewName;
 	}

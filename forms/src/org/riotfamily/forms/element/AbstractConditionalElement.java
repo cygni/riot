@@ -102,6 +102,7 @@ public abstract class AbstractConditionalElement extends AbstractElement
 	protected void renderInternal(PrintWriter writer) {
 		if (!hide || isEditable()) {
 			editor.render(writer);
+			editor.getForm().getErrors().renderErrors(editor);
 		}
 	}
 	
@@ -114,7 +115,7 @@ public abstract class AbstractConditionalElement extends AbstractElement
 
 	@Override
 	public String getStyleClass() {
-		if (!hide) {
+		if (!hide || isEditable()) {
 			return editor.getStyleClass();
 		}
 		return null;

@@ -13,6 +13,7 @@
 package org.riotfamily.components.editor;
 
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -232,6 +233,7 @@ public class ComponentEditorImpl implements ComponentEditor,
 	
 	@RemoteMethod
 	public ToolbarState getState(Long[] containerIds) {
+		initScriptSession();
 		HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
 		ToolbarState state = new ToolbarState();
 		if (containerIds != null) {
@@ -256,7 +258,7 @@ public class ComponentEditorImpl implements ComponentEditor,
 	@RemoteMethod
 	public void publish(Long[] containerIds) {
 		if (containerIds != null) {
-			for (Long id : containerIds) {
+			for (Long id : Generics.newHashSet(Arrays.asList(containerIds))) {
 				if (id != null) {
 					ContentContainer container = ContentContainer.load(id);
 					assertIsPublishGranted(container);
@@ -270,7 +272,7 @@ public class ComponentEditorImpl implements ComponentEditor,
 	@RemoteMethod
 	public void discard(Long[] containerIds) {
 		if (containerIds != null) {
-			for (Long id : containerIds) {
+			for (Long id : Generics.newHashSet(Arrays.asList(containerIds))) {
 				if (id != null) {
 					ContentContainer container = ContentContainer.load(id);
 					assertIsEditGranted(container);
@@ -311,26 +313,32 @@ public class ComponentEditorImpl implements ComponentEditor,
 		WebContext ctx = WebContextFactory.get();
 		return new CapturingResponseWrapper(ctx.getHttpServletResponse(), sw);
 	}
+	
+	private void initScriptSession() {
+		WebContext webContext = WebContextFactory.get();
+		HttpServletRequest request = webContext.getHttpServletRequest();
+
+		ScriptSession currentSession = webContext.getScriptSession();
+		String host = request.getServerName();
+		RiotUser user = AccessController.getCurrentUser();
+
+		currentSession.setAttribute("host", host);
+		currentSession.setAttribute("userId", user.getUserId());
+	}
 
 	private void nofifyUsers() {
-		
 		WebContext webContext = WebContextFactory.get();
 		HttpServletRequest request = webContext.getHttpServletRequest();
 
 		final ScriptSession currentSession = webContext.getScriptSession();
-		final String host = request.getServerName();
 		final RiotUser user = AccessController.getCurrentUser();
-		
-		Locale locale = RequestContextUtils.getLocale(request);
-
-		currentSession.setAttribute("host", host);
-		currentSession.setAttribute("userId", user.getUserId());
-		
+		final String host = request.getServerName();
 		String userName = "";
 		if (user.getName() != null) {
 			userName = " (" + user.getName() + ")";
 		}
 		
+		Locale locale = RequestContextUtils.getLocale(request);
 		final String message = messageSource.getMessage(
 				"components.concurrentModification", 
 				new Object[] {
@@ -343,9 +351,9 @@ public class ComponentEditorImpl implements ComponentEditor,
 		Browser.withAllSessionsFiltered(
 			new ScriptSessionFilter() {
 				public boolean match(ScriptSession session) {
-					return !user.getUserId().equals(currentSession.getAttribute("userId")) 
-							&& session.getPage().equals(currentSession.getPage())
-							&& host.equals(currentSession.getAttribute("host"));
+					return !user.getUserId().equals(session.getAttribute("userId")) 
+							&& currentSession.getPage().equals(session.getPage())
+							&& host.equals(session.getAttribute("host"));
 				}
 			}, 
 			new Runnable() {

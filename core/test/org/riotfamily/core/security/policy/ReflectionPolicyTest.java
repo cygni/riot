@@ -12,8 +12,7 @@
  */
 package org.riotfamily.core.security.policy;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 import org.riotfamily.core.screen.DefaultScreenContext;
 import org.riotfamily.core.screen.ScreenContext;
@@ -49,7 +48,7 @@ public class ReflectionPolicyTest {
 		Assert.assertEquals(0, policy.getInvokedMethod());
 	}
 	
-	public class TestPolicy extends ReflectionPolicy {
+	public static class TestPolicy extends ReflectionPolicy {
 		
 		private int invokedMethod;
 		

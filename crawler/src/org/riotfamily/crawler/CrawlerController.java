@@ -31,6 +31,8 @@ public class CrawlerController implements Controller {
 	public ModelAndView handleRequest(HttpServletRequest request, 
 			HttpServletResponse response) throws Exception {
 		
+		response.setContentType("text/html");
+		
 		PrintWriter out = response.getWriter();
 		if (crawler.isRunning()) {
 			out.print(crawler.getProgress()  + "% completed.");

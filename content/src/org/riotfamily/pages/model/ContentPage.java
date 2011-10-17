@@ -182,6 +182,11 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 	}
 
 	@Transient
+	public String getUrl() {
+		return getPath() + getSite().getDefaultSuffix(this); 
+	}
+	
+	@Transient
 	public boolean isRequestable() {
 		return (isPublished() && site.isEnabled())
 				|| AccessController.isAuthenticatedUser();
@@ -194,7 +199,12 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		}
 		return parent.getChildren();
 	}
-
+	
+	@Transient
+	public Date getLastPublished() {
+		return getContentContainer().getLastPublished();
+	}
+		
 	@Override
 	public String toString() {
 		return String.format("ContentPage[path=%s,id=%s,site=%s]", getPath(),
@@ -260,7 +270,8 @@ public class ContentPage extends ContentEntity implements Page, Lifecycle {
 		this.path = path;
 	}
 
-	private void updatePath() {
+	// TODO: This method really should be private again.
+	public void updatePath() {
 		String oldPath = this.path;
 		if (materializePath()) {
 			PageAlias.create(this, oldPath);

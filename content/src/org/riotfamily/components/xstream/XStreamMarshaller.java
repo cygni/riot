@@ -21,6 +21,7 @@ import org.riotfamily.components.model.Content;
 import org.riotfamily.components.model.ContentMap;
 import org.riotfamily.components.model.ContentMapImpl;
 import org.riotfamily.components.model.ContentMapMarshaller;
+import org.riotfamily.pages.model.VirtualPage;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -67,7 +68,8 @@ public class XStreamMarshaller implements ContentMapMarshaller,
 		xstream.alias("component", Component.class);
 		xstream.alias("component-list", ComponentList.class);
 		xstream.alias("content-map", ContentMapImpl.class);
-
+		xstream.alias("virtual-page", VirtualPage.class);
+			
 		Mapper mapper = xstream.getMapper();
 
 		xstream.registerConverter(new HibernateEntityConverter(mapper,
@@ -75,6 +77,9 @@ public class XStreamMarshaller implements ContentMapMarshaller,
 		xstream.registerConverter(new ComponentListConverter(mapper), 1);
 		xstream.registerConverter(new ComponentConverter(mapper), 2);
 		xstream.registerConverter(new ContentMapConverter(mapper), 1);
+		xstream.registerConverter(new VirtualPageConverter(), 1);
+		
+		xstream.setMarshallingStrategy(new NullSafeXPathMarshallingStrategy());
 	}
 	
 	private DataHolder createDataHolder(Content content) {
@@ -84,7 +89,6 @@ public class XStreamMarshaller implements ContentMapMarshaller,
 	}
 	
 	public ContentMap unmarshal(Content owner, String xml) {
-		owner.getReferences().clear();
 		HierarchicalStreamReader reader = driver.createReader(new StringReader(
 				xml));
 		return (ContentMap) xstream.unmarshal(reader, null,
@@ -93,7 +97,6 @@ public class XStreamMarshaller implements ContentMapMarshaller,
 	
 	public String marshal(ContentMap contentMap) {
 		Content owner = contentMap.getContent();
-		owner.getReferences().clear();
 		StringWriter sw = new StringWriter();
 		HierarchicalStreamWriter writer = driver.createWriter(sw);
 		xstream.marshal(contentMap, writer, createDataHolder(owner));
@@ -102,6 +105,6 @@ public class XStreamMarshaller implements ContentMapMarshaller,
 	
 	public static void addReference(DataHolder dataHolder, Object ref) {
 		Content content = (Content) dataHolder.get("content");
-		content.getReferences().add(ref);
+		content.addReference(ref);
 	}
 }

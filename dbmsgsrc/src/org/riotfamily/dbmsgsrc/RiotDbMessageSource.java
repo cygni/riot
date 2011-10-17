@@ -12,6 +12,7 @@
  */
 package org.riotfamily.dbmsgsrc;
 
+import java.util.Locale;
 import java.util.Set;
 
 import org.riotfamily.common.i18n.DefaultCodeRevealingMessageSource;
@@ -21,9 +22,9 @@ import org.riotfamily.core.security.AccessController;
 import org.riotfamily.core.security.auth.RiotUser;
 import org.riotfamily.dbmsgsrc.model.MessageBundleEntry;
 import org.springframework.context.MessageSource;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
 public class RiotDbMessageSource extends DefaultCodeRevealingMessageSource {
 
 	private DbMessageSource dbMessageSource;
@@ -42,6 +43,27 @@ public class RiotDbMessageSource extends DefaultCodeRevealingMessageSource {
 	@Override
 	public void setParentMessageSource(MessageSource parent) {
 		dbMessageSource.setParentMessageSource(parent);
+	}
+	
+	
+	@Override
+	@Transactional
+	public String getMessage(MessageSourceResolvable resolvable, Locale locale) {
+		return super.getMessage(resolvable, locale);
+	}
+	
+	@Override
+	@Transactional
+	public String getMessage(String code, Object[] args, Locale locale) {
+		return super.getMessage(code, args, locale);
+	}
+	
+	@Override
+	@Transactional
+	public String getMessage(String code, Object[] args, String defaultMessage,
+			Locale locale) {
+
+		return super.getMessage(code, args, defaultMessage, locale);
 	}
 	
 	@Override
@@ -74,8 +96,9 @@ public class RiotDbMessageSource extends DefaultCodeRevealingMessageSource {
 			if (message != null) {
 				sb.append(message);
 			}
-			sb.append("<span class=\"messageCode\" onclick=\"window.open('")
-				.append(url).append("','dbmsgsrc','width=650,height=400');return false\"></span>");
+			sb.append("<span class=\"messageCode\" onclick=\"")
+				.append("new riot.window.Dialog({url: '").append(url).append("', ")
+				.append("title: '").append(codes[0]).append("', closeButton: true, minHeight: 150});return false\"></span>");
 			
 			return sb.toString();
 		}
@@ -86,7 +109,7 @@ public class RiotDbMessageSource extends DefaultCodeRevealingMessageSource {
 		MessageBundleEntry entry = dbMessageSource.getEntry(code, null);
 		if (entry != null) {
 			return getContextPath() + handlerUrlResolver.getUrlForHandler(
-					"popupFormController", "riotMessageBundleEntry", entry.getId());
+					"editMessageFormController", entry.getId());
 
 		}
 		return null;

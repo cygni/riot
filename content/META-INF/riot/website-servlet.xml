@@ -39,7 +39,7 @@
 		<constructor-arg ref="viewComponentRenderer" />
 		<property name="toolbarScripts">
 			<list>
-				<value>riot-js/resources.js</value>
+				<value>riot/resources.js</value>
 				<value>toolbar-loader.js</value>
 			</list>
 		</property>
@@ -82,5 +82,15 @@
 		<bean class="org.riotfamily.pages.annotations.PagePropertyArgumentResolver" />
 		<bean class="org.riotfamily.pages.annotations.SitePropertyArgumentResolver" />
 	</override:add>
+	
+	<override:add ref="annotationMethodHandlerAdapter" property="ignoredTypes">
+		<value>org.riotfamily.pages.model.Page</value>
+		<value>org.riotfamily.pages.model.Site</value>
+	</override:add>
+	
+	<override:add ref="annotationMethodHandlerAdapter" property="ignoredAnnotations">
+		<value>org.riotfamily.pages.annotations.PageProperty</value>
+		<value>org.riotfamily.pages.annotations.SiteProperty</value>
+	</override:add>		
 
 </beans>

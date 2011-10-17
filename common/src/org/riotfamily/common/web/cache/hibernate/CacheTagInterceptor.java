@@ -29,9 +29,12 @@ import org.hibernate.type.Type;
 import org.riotfamily.cachius.CacheService;
 import org.riotfamily.common.hibernate.HibernateUtils;
 import org.riotfamily.common.hibernate.SessionFactoryAwareInterceptor;
+import org.riotfamily.common.util.ExceptionUtils;
 import org.riotfamily.common.util.Generics;
+import org.riotfamily.common.web.cache.CascadeCacheInvalidation;
 import org.riotfamily.common.web.cache.TagCacheItems;
 import org.riotfamily.common.web.cache.tags.CacheTagUtils;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
 
@@ -73,7 +76,7 @@ public class CacheTagInterceptor extends EmptyInterceptor
 			String[] propertyNames, Type[] types) {
 		
 		if (entity.getClass().isAnnotationPresent(TagCacheItems.class)) {
-			CacheTagUtils.invalidate(cacheService, entity.getClass(), id);
+			invalidate(entity.getClass(), id);
 		}
 		invalidateOwners(entity);
 	}
@@ -83,7 +86,7 @@ public class CacheTagInterceptor extends EmptyInterceptor
 			String[] propertyNames, Type[] types) {
 		
 		if (entity.getClass().isAnnotationPresent(TagCacheItems.class)) {
-			CacheTagUtils.invalidate(cacheService, entity.getClass());
+			invalidate(entity.getClass());
 		}
 		invalidateOwners(entity);
 		return false;
@@ -95,7 +98,7 @@ public class CacheTagInterceptor extends EmptyInterceptor
 			String[] propertyNames, Type[] types) {
 	
 		if (entity.getClass().isAnnotationPresent(TagCacheItems.class)) {
-			CacheTagUtils.invalidate(cacheService, entity.getClass(), id);
+			invalidate(entity.getClass(), id);
 		}
 		invalidateOwners(entity);
 		return false;
@@ -109,7 +112,7 @@ public class CacheTagInterceptor extends EmptyInterceptor
 			PersistentCollection pc = (PersistentCollection) collection;
 			Object entity = pc.getOwner();
 			if (entity != null && entity.getClass().isAnnotationPresent(TagCacheItems.class)) {
-				CacheTagUtils.invalidate(cacheService, entity.getClass(), pc.getKey());		
+				invalidate(entity.getClass(), pc.getKey());
 			}
 		}
 	}
@@ -120,14 +123,16 @@ public class CacheTagInterceptor extends EmptyInterceptor
 		List<Field> fields = getInverseMappingFields(entity.getClass());
 		if (fields != null) {
 			for (Field field : fields) {
+				Object owner = null;
 				try {
-					Object owner = field.get(entity);
+					owner = field.get(entity);
+				}
+				catch (Exception e) {
+					throw ExceptionUtils.wrapReflectionException(e);
+				}
+				if (owner != null) {
 					Serializable id = HibernateUtils.getId(sessionFactory, owner);
-					CacheTagUtils.invalidate(cacheService, field.getType(), id);
-				}
-				catch (IllegalArgumentException e) {
-				}
-				catch (IllegalAccessException e) {
+					invalidate(owner.getClass(), id);
 				}
 			}
 		}
@@ -156,6 +161,9 @@ public class CacheTagInterceptor extends EmptyInterceptor
 	}
 
 	private boolean isInverseMapping(Field field) {
+		if (field.isAnnotationPresent(CascadeCacheInvalidation.class)) {
+			return true;
+		}
 		Class<?> clazz = field.getType();
 		if (clazz.isAnnotationPresent(TagCacheItems.class)) {
 			ClassMetadata meta = sessionFactory.getClassMetadata(clazz);
@@ -178,5 +186,17 @@ public class CacheTagInterceptor extends EmptyInterceptor
 		}
 		return false;
 	}
-	
+
+	private void invalidate(Class<?> clazz) {
+		invalidate(clazz, null);
+	}
+
+	private void invalidate(Class<?> clazz, Serializable id) {
+		CacheTagUtils.invalidate(cacheService, getAnnotatedClass(clazz), id);
+	}
+
+	private Class<?> getAnnotatedClass(Class<?> clazz) {
+		return AnnotationUtils.findAnnotationDeclaringClass(TagCacheItems.class, clazz);
+	}
+
 }

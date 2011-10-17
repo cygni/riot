@@ -1,4 +1,5 @@
 dependencies {
-	compile project(':core'), project(':common'), libs(['spring_core'])
+	compile project(':core'), project(':common'), libs(['spring_core', 'c3p0'])
+	compile lib('servlet_api')
 }
 

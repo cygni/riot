@@ -53,6 +53,8 @@ public class Content extends ActiveRecordBeanSupport implements ContentMap {
 
 	private boolean xmlRequiresUpdate;
 	
+	private boolean unmarshalling;
+	
 	private transient ContentMap map;
 	
 	private transient Map<String, ContentFragment> fragments = Generics.newHashMap();
@@ -109,6 +111,7 @@ public class Content extends ActiveRecordBeanSupport implements ContentMap {
 	private void marshal() {
 		if (xml == null || xmlRequiresUpdate) {
 			dirty |= xmlRequiresUpdate;
+			references = Generics.newHashSet();
 			xml = marshaller.marshal(getMap());
 			xmlRequiresUpdate = false;
 		}
@@ -121,9 +124,12 @@ public class Content extends ActiveRecordBeanSupport implements ContentMap {
 			}
 			else {
 				Assert.isTrue(!xmlRequiresUpdate, "xmlRequiresUpdate must be false if map is null");
+				unmarshalling = true;
 				fragments.clear();
+				references = Generics.newHashSet();
 				map = marshaller.unmarshal(this, xml);
 				xmlRequiresUpdate = false;
+				unmarshalling = false;
 			}
 		}
 	}
@@ -140,14 +146,19 @@ public class Content extends ActiveRecordBeanSupport implements ContentMap {
 	 * ContentFragments invoke this method when they are modified.
 	 */
 	void fragmentModified() {
-		xmlRequiresUpdate = true;
+		if (!unmarshalling) {
+			xmlRequiresUpdate = true;
+		}
+	}
+	
+	public void addReference(Object ref) {
+		references.add(ref);
 	}
 	
 	@Transient
 	public Set<Object> getReferences() {
-		if (references == null) {
-			references = Generics.newHashSet();
-		}
+		unmarshal();
+		marshal();
 		return references;
 	}
 	

@@ -12,6 +12,8 @@
  */
 package org.riotfamily.components.model;
 
+import java.util.Date;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -26,7 +28,10 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Columns;
 import org.hibernate.annotations.Type;
 import org.riotfamily.common.hibernate.ActiveRecordBeanSupport;
+import org.riotfamily.common.web.cache.CascadeCacheInvalidation;
 import org.riotfamily.common.web.cache.TagCacheItems;
+import org.riotfamily.core.security.AccessController;
+import org.riotfamily.core.security.auth.RiotUser;
 
 /**
  * Entity that holds references to multiple Content versions.
@@ -37,11 +42,16 @@ import org.riotfamily.common.web.cache.TagCacheItems;
 @TagCacheItems
 public class ContentContainer extends ActiveRecordBeanSupport {
 
+	@CascadeCacheInvalidation
 	private ContentContainerOwner owner;
 	
 	private Content liveVersion;
 
 	private Content previewVersion;
+	
+	private Date lastPublished;
+	
+	private String lastPublishedBy;
 
 	
 	protected ContentContainer() {
@@ -93,6 +103,22 @@ public class ContentContainer extends ActiveRecordBeanSupport {
 		this.previewVersion = previewVersion;
 	}
 	
+	public Date getLastPublished() {
+		return lastPublished;
+	}
+	
+	public void setLastPublished(Date lastPublished) {
+		this.lastPublished = lastPublished;
+	}
+	
+	public String getLastPublishedBy() {
+		return lastPublishedBy;
+	}
+	
+	public void setLastPublishedBy(String lastPublishedBy) {
+		this.lastPublishedBy = lastPublishedBy;
+	}
+	
 	public Content getContent(boolean preview) {
 		if (!preview && liveVersion != null) {
 			return liveVersion;
@@ -114,32 +140,31 @@ public class ContentContainer extends ActiveRecordBeanSupport {
 	
 	public void publish() {
 		if (isDirty()) {
+			unpublish();
 			Content preview = getPreviewVersion();
-			Content oldLiveVersion = liveVersion;
 			liveVersion = new Content(preview);
+			liveVersion.save();
 			preview.setDirty(false);
-			if (oldLiveVersion != null) {
-				oldLiveVersion.delete();
+			lastPublished = new Date();
+			RiotUser currentUser = AccessController.getCurrentUser();
+			if (currentUser != null) {
+				lastPublishedBy = currentUser.getUserId();
 			}
 		}
 	}
 	
 	public void unpublish() {
 		if (liveVersion != null) {
-			liveVersion.setContainer(null);
 			liveVersion.delete();
 			liveVersion = null;
 		}
 	}
 	
 	public void discard() {		
-		Content live = getLiveVersion();
-		if (live != null) {
-			Content oldPreviewVersion = previewVersion;
-			previewVersion = new Content(live);
-			if (oldPreviewVersion != null) {
-				oldPreviewVersion.delete();
-			}
+		if (liveVersion != null) {
+			previewVersion.delete();
+			previewVersion = new Content(liveVersion);
+			previewVersion.save();
 		}
 	}
 	

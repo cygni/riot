@@ -144,8 +144,7 @@ riot.components = (function() {
 		},
 		
 		findComponentElements: function() {
-			this.componentElements = Selector.findChildElements(this.element, ['.riot-component']);
-			
+			this.componentElements = this.element.childElements().findAll(function(el) { return el.hasClassName('riot-component'); });
 		},
 			
 		insertOn: function() {
@@ -164,7 +163,8 @@ riot.components = (function() {
 					.removeClassName('riot-empty-list')
 					.enableLinks();
 				
-				delete this.insertButton.remove();
+				this.insertButton.remove();
+				this.insertButton = undefined;
 			}
 		},
 
@@ -245,13 +245,24 @@ riot.components = (function() {
 							var zebraClass = (i % 2 == 0) ? 'even' : 'odd'; 
 							desc.className = desc.className.replace(zebraExp, '$1' + zebraClass + '$3');
 						}
-						// Set "every-nth" or "not-every-nth" class
-						var modExp = /(^|\s)(not-)?every-(\d+)(nd|rd|th)(-|\s|$)/;
+						// Set "every-nth-remainder-x" or "not-every-nth-remainder-x" class
+						var modExp = /(^|\s|-)(not-)?every-(\d+)(nd|rd|th)-remainder-(\d+)(-|\s|$)/;
 						var match = desc.className.match(modExp);
 						if (match) {
 							var nth = match[3];
-							var every = ((i + 1) % nth == 0) ? 'every' : 'not-every';
-							desc.className = desc.className.replace(modExp, '$1' + every + '-$3$4$5');
+							var remainder = match[5];
+							var every = ((i + 1) % nth == remainder) ? 'every' : 'not-every';
+							desc.className = desc.className.replace(modExp, '$1' + every + '-$3$4-remainder-$5$6');
+						}
+						else {
+							// Set "every-nth" or "not-every-nth" class
+							modExp = /(^|\s|-)(not-)?every-(\d+)(nd|rd|th)(-|\s|$)/;
+							match = desc.className.match(modExp);
+							if (match) {
+								var nth = match[3];
+								var every = ((i + 1) % nth == 0) ? 'every' : 'not-every';
+								desc.className = desc.className.replace(modExp, '$1' + every + '-$3$4$5');
+							}
 						}
 					}
 				});
@@ -377,12 +388,12 @@ riot.components = (function() {
 		},
 			
 		propertiesOn: function() {
-			this.element.parentNode.addClassName('riot-mode-properties');
+			this.element.up().addClassName('riot-mode-properties');
 			this.setClickHandler(this.editProperties.bind(this));
 		},
 		
 		propertiesOff: function() {
-			this.element.parentNode.removeClassName('riot-mode-properties');
+			this.element.up().removeClassName('riot-mode-properties');
 			this.removeClickHandler();
 		},
 		
@@ -706,12 +717,20 @@ riot.components = (function() {
 	});
 
 	dwr.engine.setErrorHandler(function(err, ex) {
-		if (ex.javaClassName == 'org.riotfamily.riot.security.PermissionDeniedException') {
-			new riot.window.dialog({
-				title: '${title.permissionDenied}', 
-				url: riot.contextPath + ex.permissionRequestUrl	
+		if (ex.javaClassName == 'org.riotfamily.core.security.policy.PermissionDeniedException') {
+			new riot.window.Dialog({
+				url: riot.contextPath + ex.permissionRequestUrl,
+				minHeight : 255,
+				closeButton: true,
+				autoSize: true
 			});
 		}
+	});
+	
+	dwr.engine.setWarningHandler(function(err, ex) {
+	    if (window.console && console.log) {
+	        console.log(err);
+	    }
 	});
 	
 	// Make lists sortable after moveOn() has been invoked. This has to be
@@ -830,7 +849,7 @@ riot.components = (function() {
 		},
 		
 		init: function() {
-			var containerIds = $$('object.riot-container > param[name=id]').invoke('getAttribute', 'value');
+			var containerIds = $$('a.riot-container').invoke('readAttribute', 'rel');
 			ComponentEditor.getState(containerIds, setState);
 		},
 		

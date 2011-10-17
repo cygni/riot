@@ -12,6 +12,7 @@
  */
 package org.riotfamily.dbmsgsrc.model;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -19,13 +20,13 @@ import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.MapKey;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.Type;
 import org.hibernate.criterion.Restrictions;
@@ -70,6 +71,7 @@ public class MessageBundleEntry extends ActiveRecordBeanSupport {
 	}
 
 	@NaturalId
+	@Column(nullable=false)
 	public String getCode() {
 		return code;
 	}
@@ -98,7 +100,7 @@ public class MessageBundleEntry extends ActiveRecordBeanSupport {
 	public void setDefaultText(String text) {
 		Message message = getDefaultMessage();
 		if (message == null) {
-			setDefaultMessage(new Message(C_LOCALE, text));
+			setDefaultMessage(new Message(this, C_LOCALE, text));
 		}
 		else {
 			message.setText(text);
@@ -122,7 +124,7 @@ public class MessageBundleEntry extends ActiveRecordBeanSupport {
 
 	@OneToMany(cascade=CascadeType.ALL)
     @JoinColumn(name="entry_id")
-    @MapKey(columns={@Column(name="locale")})
+	@MapKeyColumn(name="locale")
 	@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="messages")
 	public Map<Locale, Message> getMessages() {
 		return messages;
@@ -152,6 +154,17 @@ public class MessageBundleEntry extends ActiveRecordBeanSupport {
 		}
 		return messages.size() > 1;
 	}
+	
+	@Transient
+	public String getText(Locale locale) {
+		if (messages != null) {
+			Message message = messages.get(locale);
+			if (message != null) {
+				return message.getText();
+			}
+		}
+		return null;
+	}
 
 	// ------------------------------------------------------------------------
 	// Active record methods
@@ -165,6 +178,26 @@ public class MessageBundleEntry extends ActiveRecordBeanSupport {
 				.set("bundle", bundle)
 				.set("code", code))
 				.uniqueResult();
+	}
+	
+	public static MessageBundleEntry load(Long id) {
+		return load(MessageBundleEntry.class, id);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void removeEmptyEntries(String bundle) {
+		List<MessageBundleEntry> entries = getSession().createCriteria(MessageBundleEntry.class)
+			.setCacheable(true)
+			.setCacheRegion("messages")
+			.add(Restrictions.sizeLe("messages", 1))
+			.add(Restrictions.naturalId()
+				.set("bundle", bundle))
+				.list();
+		
+		for (MessageBundleEntry entry : entries) {
+			entry.delete();
+		}
+
 	}
 
 }

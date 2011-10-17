@@ -21,12 +21,15 @@
 	<tx:annotation-driven />
 	
 	<dwr:configuration>
+		<dwr:convert type="exception" class="org.riotfamily.core.security.policy.PermissionDeniedException">
+			<dwr:include method="message,permissionRequestUrl"/>
+		</dwr:convert>
 		<dwr:convert type="exception" class="java.lang.Exception">
 			<dwr:exclude method="stackTrace"/>
 		</dwr:convert>
 	</dwr:configuration>
 	
-	<dwr:annotation-config />
+	<dwr:annotation-config id="dwrConfig" />
 	
 	<bean id="configurer" class="org.riotfamily.common.beans.config.ProfileConfigurer">
 		<property name="ignoreResourceNotFound" value="true" />
@@ -45,7 +48,6 @@
 	
 	<util:list id="messageBasenames">
     	<value>/WEB-INF/i18n/messages</value>
-    	<value>/WEB-INF/riot-config/messages</value>
 		<value>classpath:/org/riotfamily/core/runtime/i18n/messages</value>
 	</util:list>
 	
@@ -71,6 +73,8 @@
 	<!-- Spring Web-MVC Setup -->
 	
 	<dwr:controller id="dwrController" debug="true">
+		<dwr:config-param name="maxCallCount" value="50"/>
+		<dwr:config-param name="accessLogLevel" value="exception"/>
 		<dwr:config-param name="activeReverseAjaxEnabled" value="true" />
 	</dwr:controller>
 	
@@ -289,6 +293,12 @@
 		</property>
 	</bean>
 	
+	<bean id="changePasswordController" name="/changePassword" class="org.riotfamily.core.security.ui.ChangePasswordController">		
+		<constructor-arg ref="formContextFactory" />
+		<constructor-arg ref="riotUserDao" />
+		<constructor-arg ref="transactionManager" />
+	</bean>
+	
 	<!-- Root group screen -->
 	
 	<bean id="home" class="org.riotfamily.core.screen.GroupScreen">
@@ -331,7 +341,7 @@
 		<property name="priorityConfigLocations">
 			<list>
 				<value>classpath:/org/riotfamily/core/runtime/forms.xml</value>
-				<value>/WEB-INF/riot-config/forms.xml</value>
+				<value>/WEB-INF/forms.xml</value>
 			</list>
 		</property>
 		<property name="mimetypesMap" ref="fileTypeMap" />
@@ -395,15 +405,10 @@
 	</util:map>
 	
 	<util:list id="resourceMappings">
-		<!-- Allow styles to be overwritten in WEB-INF/style -->
-		<bean class="org.riotfamily.core.resource.ResourceMapping">
-			<property name="path" value="/style/" />
-			<property name="location" value="/WEB-INF/riot-config/style/" />
-		</bean>
 		<!-- Allow any resource to be overwritten in WEB-INF/resources -->
 		<bean class="org.riotfamily.core.resource.ResourceMapping">
 			<property name="path" value="/" />
-			<property name="location" value="/WEB-INF/riot-config/resources/" />
+			<property name="location" value="/WEB-INF/resources/" />
 		</bean>
 		<!-- Riot core resources -->
 		<bean class="org.riotfamily.core.resource.ResourceMapping">

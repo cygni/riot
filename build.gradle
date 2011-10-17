@@ -1,54 +1,58 @@
 libraries = [
-	jpa: 'javax.persistence:persistence-api:1.0',
+	jpa: 'org.hibernate.javax.persistence:hibernate-jpa-2.0-api:1.0.0.Final',
 	jta: 'javax.transaction:jta:1.1',
 	c3p0: 'c3p0:c3p0:0.9.1.2',
-	slf4j: 'org.slf4j:slf4j-api:1.5.10',
-	log4j: 'log4j:log4j:1.2.14',
-	junit: 'junit:junit:4.7',
-	servlet_api: 'javax.servlet:servlet-api:2.4',
-	hibernate: 'org.hibernate:hibernate-core:3.3.2.GA',
-	hibernate_ehcache: 'org.hibernate:hibernate-ehcache:3.3.2.GA',
-	hibernate_annotations: 'org.hibernate:hibernate-annotations:3.4.0.GA',
+	slf4j: 'org.slf4j:slf4j-api:1.6.1',
+	slf4j_log4j: 'org.slf4j:slf4j-log4j12:1.6.1',
+	log4j: 'log4j:log4j:1.2.14',	
+	jcl_over_slf4j: 'org.slf4j:jcl-over-slf4j:1.6.1',
+	junit: 'junit:junit:4.8.1',
+	jetty: 'org.mortbay.jetty:jetty:6.1.22',
+	servlet_api: 'javax.servlet:servlet-api:2.5',
+	hibernate: 'org.hibernate:hibernate-core:3.6.0.Final',
+	hibernate_ehcache: 'org.hibernate:hibernate-ehcache:3.6.0.Final',
 	javassist: 'javassist:javassist:3.8.0.GA',
 	cglib: 'cglib:cglib-nodep:2.2',
 	ehcache: 'net.sf.ehcache:ehcache-core:1.7.2',
-	freemarker: 'org.freemarker:freemarker:2.3.16',
+	freemarker: 'org.freemarker:freemarker:2.3.18',
 	javax_mail: 'javax.mail:mail:1.4.1',
-	json_lib: 'net.sf.json-lib:json-lib:2.3:jdk15',
-	quartz: 'org.opensymphony.quartz:quartz:1.6.1',
+	quartz: 'org.opensymphony.quartz:quartz:1.6.6',
 	dom4j: 'dom4j:dom4j:1.6.1',
+	json_lib: 'net.sf.json-lib:json-lib:2.2.3:jdk15',
 	commons_fileupload: 'commons-fileupload:commons-fileupload:1.2.1',
+	commons_io: 'commons-io:commons-io:1.4',
 	commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
 	xstream: 'com.thoughtworks.xstream:xstream:1.3.1',
-	dwr: 'org.directwebremoting:dwr:3.0.0.M1.116',
+	dwr: 'org.directwebremoting:dwr:3.0.0.161.dev',
 	yuicompressor: 'com.yahoo.platform.yui:yuicompressor:2.4.2',
-	texhyphj: 'net.davidashen:texhyphj:1.1.0',
 	htmlparser: 'org.htmlparser:htmlparser:1.6',
+	hsqldb: 'org.hsqldb:hsqldb:1.8.0.10',
 	apache_poi: 'org.apache.poi:poi:3.5-FINAL'
 ] + modules('lucene', 'org.apache.lucene:lucene-$name:2.4.1', 
 		  'core', 'highlighter', 'analyzers', 'snowball') + 
-	modules('spring', 'org.springframework:spring-$name:3.0.0.RELEASE',
+	modules('spring', 'org.springframework:spring-$name:3.0.5.RELEASE',
 		  'core', 'expression', 'beans', 'aop', 'context', 'context-support',
 		  'tx', 'jdbc', 'orm', 'oxm', 'web', 'webmvc', 'test');
 
 excludes = [
 	[group: 'javax.jms'],
 	[group: 'com.sun.jmx'],
-	[group: 'com.sun.jdmk']
+	[group: 'com.sun.jdmk'],
+	[group: 'org.mortbay.jetty', module: 'servlet-api']
 ]
 
-apply id: 'java'
-apply id: 'eclipse'
+apply plugin: 'java'
+apply plugin: 'eclipse'
 dependsOnChildren()
 
 allprojects {
 	group = 'org.riotfamily'
 	version = '9.1.0.cygni.8'
 	repositories {
-		mavenRepo urls: 'http://repository.riotfamily.org/cache'
 		mavenRepo urls: 'http://repository.riotfamily.org/external'
+		mavenRepo urls: 'http://repository.riotfamily.org/cache'
 	}
-	excludes.each{
+	excludes.each {
 		configurations.all*.exclude it
 	}
 	
@@ -57,77 +61,70 @@ allprojects {
 
 subprojects {
 	
-	if (!isMetaProject(project)) {
-		apply id: 'java'
-		apply id: 'maven'
+	apply plugin: 'java'
+	apply plugin: 'maven'
+	
+	release.dependsOn(uploadArchives)
 		
 		release.dependsOn(uploadArchives)
 		
-		sourceCompatibility = 1.5
-		targetCompatibility = 1.5
-		
-		configurations.compile.transitive = true
-		configurations.testCompile.transitive = true
+	sourceCompatibility = 1.5
+	targetCompatibility = 1.5
+	
+	configurations.compile.transitive = true
+	configurations.testCompile.transitive = true
 				
-		// Add a 'provided' configuration
-		configurations {
-			provided {
-				description = 'Dependencies provided by the JDK or a container'
-				transitive = false
-			}
+			
+	sourceSets {
+		main {
+			// No separate 'resources' dir - we keep everything under src 
+			resources.srcDirs = java.srcDirs = ['src']
 		}
-		
-		// Include 'provided' dependencies when compiling tests
-		configurations.testCompile.extendsFrom(configurations.provided)
-		
-		sourceSets {
-			main {
-				// No separate 'resources' dir - we keep everything under src 
-				resources.srcDirs = java.srcDirs = ['src']
-				
-				// Add the 'provided' configuration to the classpath
-				compileClasspath = compileClasspath + configurations.provided
-			}
-			test {
-				resources.srcDirs = java.srcDirs = ['test']
-			}
+		test {
+			// If the module contains web-tests, there is an extra 'src' 
+			// and a 'webapp' dir under /test. Otherwise the sources are 
+			// located directly under /test.
+			resources.srcDirs = java.srcDirs = [file('test/src').exists() ? 'test/src' : 'test']
 		}
-		
-		// Add META-INF directory
-        metaInf << fileTree('META-INF')
+	}
+	
+	// Add META-INF directory
+    metaInf << fileTree('META-INF')
 
-        // Add project-name and version to the manifest 
-        manifest.mainAttributes(
-        		'Implementation-Title': project.name, 
-				'Implementation-Version': project.version,
-				'Implementation-Vendor': 'riotfamily.org'
-		)
+    // Add project-name and version to the manifest 
+    manifest.mainAttributes(
+    		'Implementation-Title': project.name, 
+			'Implementation-Version': project.version,
+			'Implementation-Vendor': 'riotfamily.org'
+	)
 
-		// Create source artifacts for Java projects
-		if (isJavaProject(project)) {
-			dependencies {
-				testCompile libs(['junit', 'spring_test'])
-			}
-			task sourceJar(type: Jar) {
-				from sourceSets.main.allSource 
-				classifier = 'sources'
-			}
-			artifacts {
-				archives sourceJar
+	// Create source artifacts for Java projects
+	if (isJavaProject(project)) {
+		dependencies {
+			testCompile libs(['junit', 'spring_test'])
+		}
+		task sourceJar(type: Jar) {
+			from sourceSets.main.allSource 
+			classifier = 'sources'
+		}
+		artifacts {
+			archives sourceJar {
+				type = 'sources'
 			}
 		}
-		
-		if (rootProject.hasProperty('artifactoryUser') && rootProject.hasProperty('artifactoryPass')) {
+	}
+	
+	if (rootProject.hasProperty('artifactory.publish.username') && rootProject.hasProperty('artifactory.publish.password')) {
 	        uploadArchives {
 				repositories {
 					mavenDeployer {
-						//repository(url: "file://$System.env.HOME/.m2/repository")
-						repository(url: "http://repository.riotfamily.org/releases") {
-							authentication(userName: artifactoryUser, password: artifactoryPass)
-						}
-						snapshotRepository(url: "http://repository.riotfamily.org/snapshots") {
-							authentication(userName: artifactoryUser, password: artifactoryPass)
-						}
+					//repository(url: "file://$System.env.HOME/.m2/repository")
+					repository(url: "http://repository.riotfamily.org/releases") {
+						authentication(userName: project.'artifactory.publish.username', password: project.'artifactory.publish.password')
+					}
+					snapshotRepository(url: "http://repository.riotfamily.org/snapshots") {
+						authentication(userName: project.'artifactory.publish.username', password: project.'artifactory.publish.password')
+					}
 					}
 				}
 			}
@@ -143,14 +140,25 @@ subprojects {
 classes.enabled = false
 jar.enabled = false
 
+eclipseProject.natures << 'org.springframework.ide.eclipse.core.springnature'
+eclipseClasspath {
+	whenConfigured { classpath ->
+		classpath.entries.each { entry -> 
+			if (entry.kind == 'src') {
+				entry.output = entry.path.replaceAll('(.+?)/.*', '$1/build/eclipse')
+			}
+		}
+	}
+}
+
 gradle.taskGraph.whenReady {taskGraph ->
-	if (taskGraph.hasTask(':eclipse')) {
-		javaProjects().each{
+	if (taskGraph.hasTask(':eclipseClasspath')) {
+		subprojects.each {
 			// Collect source folders
 			project.sourceSets.main.java.srcDirs(it.sourceSets*.java.srcDirs.flatten())
 			
 			// Collect all external dependencies from the testRuntime configuration
-			it.configurations.findByName('testRuntime')?.getAllDependencies(ExternalDependency.class).each{
+			it.configurations.findByName('testRuntime')?.getAllDependencies(ExternalDependency.class).each {
 				project.configurations.compile.addDependency(it)
 			}
 		}
@@ -166,31 +174,17 @@ gradle.taskGraph.whenReady {taskGraph ->
  * Creates the gradlew wrapper scripts
  */
 task wrapper(type: Wrapper) {
-	gradleVersion = '0.9-20100126192055+0100'
-	urlRoot = 'http://riotfamily.org/downloads/gradle'
-	jarPath = 'wrapper'
+	jarFile = '.gradlew/gradle-wrapper.jar'
+	gradleVersion = '1.0-milestone-3'
 }
 
 // ---------------------------------------------------------------------------
 // Utility methods
 //----------------------------------------------------------------------------
 
-def isMetaProject(Project project) {
-	project?.name == 'jslibs'
-}
-
-def isJavaScriptProject(Project project) {
-	isMetaProject(project.parent)
-}
-
 def isJavaProject(Project project) {
-	!isMetaProject(project) && !isJavaScriptProject(project)
+	project?.name != 'jslibs'
 }
-
-def javaProjects() {
-	subprojects.findAll{ isJavaProject(it) }
-}
-
 
 def modules(String key, String pattern, String... names) {
 	libs = [:]
