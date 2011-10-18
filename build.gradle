@@ -47,7 +47,7 @@ dependsOnChildren()
 
 allprojects {
 	group = 'org.riotfamily'
-	version = '9.1.0.cygni.8'
+	version = '9.1.0.cygni.9'
 	repositories {
 		mavenRepo urls: 'http://repository.riotfamily.org/external'
 		mavenRepo urls: 'http://repository.riotfamily.org/cache'
@@ -66,14 +66,11 @@ subprojects {
 	
 	release.dependsOn(uploadArchives)
 		
-		release.dependsOn(uploadArchives)
-		
 	sourceCompatibility = 1.5
 	targetCompatibility = 1.5
 	
 	configurations.compile.transitive = true
 	configurations.testCompile.transitive = true
-				
 			
 	sourceSets {
 		main {
@@ -129,7 +126,6 @@ subprojects {
 				}
 			}
 		}
-	}
 }
 
 // The root project uses the Java plugin (allthough it's actually a meta 
